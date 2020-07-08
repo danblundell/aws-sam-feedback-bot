@@ -1,0 +1,36 @@
+{
+  "captureBotFeedback": {
+    "url": "https://docs.google.com/forms/d/e/1FAIpQLScnitt2B0uR7kRuPhiE1fb1aXesV3KbE6bYb20v9Mu_ow-Tcg/formResponse?",
+    "completeMsg": "Great, that's it! Thank you for your feedback, we'll use it to improve our services. Have a great day.",
+    "params": [
+      {
+        "name": "usp",
+        "value": "pp_url"
+      },
+      {
+        "name": "entry.621881820",
+        "slot": "easyToUse"
+      },
+      {
+        "name": "entry.1581473689",
+        "slot": "repeatMyself"
+      },
+      {
+        "name": "entry.839034727",
+        "slot": "repeatedWord"
+      },
+      {
+        "name": "entry.1114301072",
+        "slot": "howManyTimes"
+      },
+      {
+        "name": "entry.661787907",
+        "slot": "satisfied"
+      },
+      {
+        "name": "submit",
+        "value": "Submit"
+      }
+    ]
+  }
+}
