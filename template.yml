@@ -12,6 +12,16 @@ Description: >-
 Transform:
 - AWS::Serverless-2016-10-31
 
+Parameters:
+  BotName:
+    Type: String
+    Default: "Concierge-Bot-Feedback"
+    Description: "The name of the feedback bot to be deployed"
+  IntentName:
+    Type: String
+    Default: "captureFeedback"
+    Description: "The name of the default intent for capturing feedback"
+  
 # Resources declares the AWS resources that you want to include in the stack
 # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/resources-section-structure.html
 Resources:
@@ -30,3 +40,29 @@ Resources:
       Policies:
         # Give Lambda basic execution Permission to the helloFromLambda
         - AWSLambdaBasicExecutionRole
+  
+  conciergeBot:
+      Type: Custom::LexIntent
+      Properties:
+        ServiceToken:
+          Fn::ImportValue: "cfn-lex-intent-1-0-3-ServiceToken"
+        name:
+          Ref: "IntentName"
+        confirmationPrompt:
+          maxAttempts: 1
+          messages:
+            - content: "Should I order  your {Crust} crust {Type} pizza with {Sauce} sauce?"
+              contentType": "PlainText"
+        fulfillmentActivity:
+          type: "ReturnIntent"
+        rejectionStatement:
+          messages":
+            - content: "Ok, I'll cancel your order."
+              contentType: "PlainText"
+            - content: "I cancelled your order."
+              contentType: "PlainText"
+        sampleUtterances:
+          - "Order me a pizza."
+          - "Order me a {Type} pizza."
+          - "I want a {Crust} crust {Type} pizza"
+          - "I want a {Crust} crust {Type} pizza with {Sauce} sauce."
