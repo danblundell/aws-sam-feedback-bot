@@ -1,42 +1,57 @@
-# Feedback-template
+# Feedback Bot
 
-This project contains source code and supporting files for a serverless application that you can deploy with the AWS Serverless Application Model (AWS SAM) command line interface (CLI). It includes the following files and folders:
+This project contains source code and supporting files for a serverless application that creates a Feedback Bot on AWS.
 
-- `src` - Code for the application's Lambda function.
-- `events` - Invocation events that you can use to invoke the function.
-- `__tests__` - Unit tests for the application code. 
-- `template.yml` - A template that defines the application's AWS resources.
+You can deploy it with the AWS Serverless Application Model (AWS SAM) command line interface (CLI) or with your own CI/CD pipeline. 
+
+## Pre-requisites
+* AWS SAM CLI - [Install the AWS SAM CLI](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-install.html).
+* AWS Credentials configured locally - [Configure AWS Credentials](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-getting-started-set-up-credentials.html)
+* Node.js - [Install Node.js 12](https://nodejs.org/en/), including the npm package management tool.
+
+_Optional_
+* Docker - for local testing [Install Docker community edition](https://hub.docker.com/search/?type=edition&offering=community).
+
+## Project structure
+It includes the following files and folders:
+
+- `src` - Code for the application's Lambda function(s).
+- `events` - Invocation events that you can use to invoke the functions locally.
+- `__tests__` - Unit tests. 
+- `template.yml` - A template that defines the application's AWS resources for deployment.
 
 Resources for this project are defined in the `template.yml` file in this project. You can update the template to add AWS resources through the same deployment process that updates your application code.
 
-If you prefer to use an integrated development environment (IDE) to build and test your application, you can use the AWS Toolkit.  
-The AWS Toolkit is an open-source plugin for popular IDEs that uses the AWS SAM CLI to build and deploy serverless applications on AWS. The AWS Toolkit also adds step-through debugging for Lambda function code. 
+## Development
+<tbw>
 
-To get started, see the following:
+### Unit tests
 
-* [PyCharm](https://docs.aws.amazon.com/toolkit-for-jetbrains/latest/userguide/welcome.html)
-* [IntelliJ](https://docs.aws.amazon.com/toolkit-for-jetbrains/latest/userguide/welcome.html)
-* [VS Code](https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/welcome.html)
-* [Visual Studio](https://docs.aws.amazon.com/toolkit-for-visual-studio/latest/user-guide/welcome.html)
+Tests are defined in the `__tests__` folder in this project. Use `npm` to install the [Jest test framework](https://jestjs.io/) and run unit tests.
 
-## Deploy the sample application
+```bash
+feedback-bot$ npm install
+feedback-bot$ npm run test
+```
 
-The AWS SAM CLI is an extension of the AWS CLI that adds functionality for building and testing Lambda applications. It uses Docker to run your functions in an Amazon Linux environment that matches Lambda. It can also emulate your application's build environment and API.
+## Deployment
 
-To use the AWS SAM CLI, you need the following tools:
+The AWS SAM CLI is an extension of the AWS CLI that adds functionality for building and testing serverless applications.
 
-* AWS SAM CLI - [Install the AWS SAM CLI](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-install.html).
-* Node.js - [Install Node.js 12](https://nodejs.org/en/), including the npm package management tool.
-* Docker - [Install Docker community edition](https://hub.docker.com/search/?type=edition&offering=community).
-
-To build and deploy your application for the first time, run the following in your shell:
+To build and deploy the application for the first time, run the following in your shell:
 
 ```bash
 sam build
 sam deploy --guided
 ```
 
-The first command will build the source of your application. The second command will package and deploy your application to AWS, with a series of prompts:
+`sam build` will build the source of the application. 
+
+`sam deploy --guided` will package and deploy the application to AWS, with a series of prompts.
+
+> _Note_: if you use AWS profiles for your AWS credentials you'll need to add the `--profile <profile name>` flag to the `sam deploy` command
+
+After running the deploy command, you'll get a series of prompts:
 
 * **Stack Name**: The name of the stack to deploy to CloudFormation. This should be unique to your account and region, and a good starting point would be something matching your project name.
 * **AWS Region**: The AWS region you want to deploy your app to.
@@ -49,74 +64,38 @@ The first command will build the source of your application. The second command 
 Build your application by using the `sam build` command.
 
 ```bash
-my-application$ sam build
+feedback-bot$ sam build
 ```
 
 The AWS SAM CLI installs dependencies that are defined in `package.json`, creates a deployment package, and saves it in the `.aws-sam/build` folder.
+
+## Local invocation
 
 Test a single function by invoking it directly with a test event. An event is a JSON document that represents the input that the function receives from the event source. Test events are included in the `events` folder in this project.
 
 Run functions locally and invoke them with the `sam local invoke` command.
 
-```bash
-my-application$ sam local invoke helloFromLambdaFunction --no-event
-```
-
-## Add a resource to your application
-
-The application template uses AWS SAM to define application resources. AWS SAM is an extension of AWS CloudFormation with a simpler syntax for configuring common serverless application resources, such as functions, triggers, and APIs. For resources that aren't included in the [AWS SAM specification](https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md), you can use the standard [AWS CloudFormation resource types](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-template-resource-type-ref.html).
-
-Update `template.yml` to add a dead-letter queue to your application. In the **Resources** section, add a resource named **MyQueue** with the type **AWS::SQS::Queue**. Then add a property to the **AWS::Serverless::Function** resource named **DeadLetterQueue** that targets the queue's Amazon Resource Name (ARN), and a policy that grants the function permission to access the queue.
-
-```
-Resources:
-  MyQueue:
-    Type: AWS::SQS::Queue
-  helloFromLambdaFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      Handler: src/handlers/hello-from-lambda.helloFromLambdaHandler
-      Runtime: nodejs12.x
-      DeadLetterQueue:
-        Type: SQS
-        TargetArn: !GetAtt MyQueue.Arn
-      Policies:
-        - SQSSendMessagePolicy:
-            QueueName: !GetAtt MyQueue.QueueName
-```
-
-The dead-letter queue is a location for Lambda to send events that could not be processed. It's only used if you invoke your function asynchronously, but it's useful here to show how you can modify your application's resources and function configuration.
-
-Deploy the updated application.
+Example: 
 
 ```bash
-my-application$ sam deploy
+feedback-bot$ sam local invoke feedbackBotValidation --event events/repeat_0.json
 ```
-
-Open the [**Applications**](https://console.aws.amazon.com/lambda/home#/applications) page of the Lambda console, and choose your application. When the deployment completes, view the application resources on the **Overview** tab to see the new resource. Then, choose the function to see the updated configuration that specifies the dead-letter queue.
 
 ## Fetch, tail, and filter Lambda function logs
 
-To simplify troubleshooting, the AWS SAM CLI has a command called `sam logs`. `sam logs` lets you fetch logs that are generated by your Lambda function from the command line. In addition to printing the logs on the terminal, this command has several nifty features to help you quickly find the bug.
+To simplify troubleshooting, the AWS SAM CLI has a command called `sam logs`. `sam logs` lets you fetch logs that are generated by your Lambda function from the command line. 
+
+In addition to printing the logs on the terminal, this command has several nifty features to help you quickly find the bug.
 
 **NOTE:** This command works for all Lambda functions, not just the ones you deploy using AWS SAM.
 
 ```bash
-my-application$ sam logs -n helloFromLambdaFunction --stack-name sam-app --tail
+feedback-bot$ sam logs -n feedbackBotValidation --stack-name <STACK-NAME> --tail
 ```
 
 **NOTE:** This uses the logical name of the function within the stack. This is the correct name to use when searching logs inside an AWS Lambda function within a CloudFormation stack, even if the deployed function name varies due to CloudFormation's unique resource name generation.
 
 You can find more information and examples about filtering Lambda function logs in the [AWS SAM CLI documentation](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-logging.html).
-
-## Unit tests
-
-Tests are defined in the `__tests__` folder in this project. Use `npm` to install the [Jest test framework](https://jestjs.io/) and run unit tests.
-
-```bash
-my-application$ npm install
-my-application$ npm run test
-```
 
 ## Cleanup
 
