@@ -1,6 +1,6 @@
 {
-    "name": "replaced-by-user-input",
-    "description": "replaced-by-user-input",
+    "name": "concierge-bot-feedback",
+    "description": "A serverless application model for an AWS Lex Bot that captures user feedback after a delivered service",
     "version": "0.0.1",
     "private": true,
     "dependencies": {},

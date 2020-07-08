@@ -1,0 +1,20 @@
+{
+    "messageVersion": "1.0",
+    "invocationSource": "DialogCodeHook",
+    "userId": "12238293-2423849324-423489324",
+    "sessionAttributes": {},
+    "bot": {
+      "name": "FeedbackBot",
+      "alias": "$LATEST",
+      "version": "$LATEST"
+    },
+    "outputDialogMode": "Text",
+    "currentIntent": {
+      "name": "captureBotFeedback",
+      "slots": {
+        "repeatMyself": 1,
+        "repeatedWord": "repeated word"
+      },
+      "confirmationStatus": "None"
+    }
+  }
