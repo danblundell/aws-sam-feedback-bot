@@ -2,15 +2,17 @@
 
 const getService = require('./getService');
 
-module.exports = function(intentRequest, callback) {
+module.exports = async (intentRequest) => {
     console.log(`dispatch userId=${intentRequest.userId}, intentName=${intentRequest.currentIntent.name}`);
     console.log(intentRequest);
     const intentName = intentRequest.currentIntent.name;
 
     if (intentName === 'captureBotFeedback'){
         console.log(intentName + ' was called');
-        return getService(intentRequest, callback);
+        return await getService(intentRequest);
+    } else {
+        throw new Error(`intent with name ${intentName} not supported`);
     }
 
-    throw new Error(`intent with name ${intentName} not supported`);
+    
 };

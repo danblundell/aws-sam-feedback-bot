@@ -2,11 +2,11 @@
 
 const dispatch = require('./dispatch');
 
-module.exports.handler = (event, context, callback) => {
+module.exports.handler = async (event, context) => {
     try {
         console.log(`event.bot.name=${event.bot.name}`);
-        dispatch(event, (response) => callback(null, response));
+        return await dispatch(event);
     } catch (err) {
-        callback(err);
+        return err;
     }
 };
