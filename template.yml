@@ -13,15 +13,38 @@ Transform:
 - AWS::Serverless-2016-10-31
 
 Parameters:
-  BotName:
+  Workload:
     Type: String
-    Default: "Concierge-Bot-Feedback"
-    Description: "The name of the feedback bot to be deployed"
-  IntentName:
+    Default: "dev"
+    Description: "The type of workload (environment) that this stack will run"
+  FirstTimeDeploy: 
     Type: String
-    Default: "captureFeedback"
-    Description: "The name of the default intent for capturing feedback"
-  
+    Default: false
+    Description: "Whether this is the first time the stack is being deployed"
+  # fn-bot-checksum:
+  #   Type: String
+  #   Default: Fn::ImportValue fn-bot-checksum
+  # fn-bot-intent-checksum:
+  #   Type: String
+  #   Default: Fn::ImportValue fn-bot-intent-checksum
+  # fn-bot-slot-checksum:
+  #   Type: String
+  #   Default: Fn::ImportValue fn-bot-slot-checksum
+
+#Conditions:
+  # LikertScaleSlotExists:
+  #   Fn::Equals:
+  #     - Ref fn-bot-slot-checksum
+  #     - Ref 'AWS::NoValue'
+  # ConciergeBotExists:
+  #   Fn::Equals:
+  #     - Ref fn-bot-checksum
+  #     - Ref 'AWS::NoValue'
+  # ConciergeBotIntentExists:
+  #   Fn::Equals:
+  #     - Ref fn-bot-intent-checksum
+  #     - Ref 'AWS::NoValue'
+
 # Resources declares the AWS resources that you want to include in the stack
 # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/resources-section-structure.html
 Resources:
@@ -33,6 +56,9 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       Handler: src/validation/index.handler
+      FunctionName: !Sub
+        - "${AWS::StackName}-validation-${Workload}"
+        - Workload: !Ref Workload
       Runtime: nodejs12.x
       MemorySize: 128
       Timeout: 100
@@ -41,28 +67,132 @@ Resources:
         # Give Lambda basic execution Permission to the helloFromLambda
         - AWSLambdaBasicExecutionRole
   
-  conciergeBot:
+  likertScaleSlot:
+    Type: Custom::LexSlotType
+    Properties:
+      ServiceToken:
+        Fn::ImportValue: cfn-lex-slot-type-1-0-3-ServiceToken
+      name: !Sub
+        - '${AWS::StackName}_agree_disagree_slot_${Workload}'
+        - Workload: !Ref Workload
+      description: 1-5 scale for strongly agree through to strongly disagree
+      valueSelectionStrategy: TOP_RESOLUTION
+      enumerationValues:
+      - value: 1
+        synonyms:
+          - strongly agree
+      - value: 2
+        synonyms:
+          - agree
+      - value: 3
+        synonyms:
+          - neither
+          - don't care
+          - not bothered
+      - value: 4
+        synonyms:
+          - disagree
+      - value: 5
+        synonyms:
+          - strongly disagree
+
+  conciergeBotIntent:
       Type: Custom::LexIntent
       Properties:
         ServiceToken:
-          Fn::ImportValue: "cfn-lex-intent-1-0-3-ServiceToken"
-        name:
-          Ref: "IntentName"
+          Fn::ImportValue: cfn-lex-intent-1-0-3-ServiceToken
+        name: !Sub
+        - '${AWS::StackName}_intent_${Workload}'
+        - Workload: !Ref Workload
         confirmationPrompt:
           maxAttempts: 1
           messages:
-            - content: "Should I order  your {Crust} crust {Type} pizza with {Sauce} sauce?"
-              contentType": "PlainText"
+            - content: "Is that your feedback complete?"
+              contentType: "PlainText"
         fulfillmentActivity:
           type: "ReturnIntent"
         rejectionStatement:
-          messages":
-            - content: "Ok, I'll cancel your order."
+          messages:
+            - content: "Ok, we'll leave it there, thanks!"
               contentType: "PlainText"
-            - content: "I cancelled your order."
+            - content: "I've cancelled your feedback."
               contentType: "PlainText"
         sampleUtterances:
-          - "Order me a pizza."
-          - "Order me a {Type} pizza."
-          - "I want a {Crust} crust {Type} pizza"
-          - "I want a {Crust} crust {Type} pizza with {Sauce} sauce."
+          - "{easyToUse}"
+        slots:
+        - name: easyToUse
+          description: Was the service easy to use?
+          priority: 1
+          slotConstraint: Required
+          slotType: 
+            Ref: likertScaleSlot
+          slotTypeVersion: "$LATEST"
+          valueElicitationPrompt:
+            maxAttempts: 2
+            messages:
+            - content: How easy was it to use the automated service?
+              contentType: PlainText
+
+
+  conciergeBot:
+    Type: Custom::LexBot
+    DependsOn:
+      - conciergeBotIntent
+    Properties: 
+      ServiceToken:
+        Fn::ImportValue: cfn-lex-bot-1-0-3-ServiceToken
+      name: !Sub
+        - '${AWS::StackName}_bot_${Workload}'
+        - Workload: !Ref Workload
+      abortStatement:
+        messages:
+          - content: "I don't understand. Can you try again?"
+            contentType: "PlainText"
+          - content: "I'm sorry, I don't understand."
+            contentType: "PlainText"
+      childDirected: false
+      clarificationPrompt:
+        maxAttempts: 1
+        messages:
+          - content: "I'm sorry, I didn't hear that. Can you repeate what you just said?"
+            contentType: "PlainText"
+          - content: "Can you say that again?"
+            contentType: "PlainText"
+      description: 'a bot'
+      voiceId: Joanna
+      idleSessionTTLInSeconds: 300
+      intents:
+        - intentName:
+            Ref: conciergeBotIntent
+          intentVersion: "$LATEST"
+      locale: en-US
+      processBehavior: "BUILD"
+
+# Export the checksum for each custom resource so that
+# we can provide the checksum for subsequent updates
+# to the stack
+Outputs:
+  ConciergeBotChecksum:
+    Description: The checksum of the Lex Bot for this stack.
+    Value: !GetAtt conciergeBot.checksum
+    Export:
+      Name: fn-bot-checksum
+  ConciergeBotVersion:
+    Description: The version of the Lex Bot for this stack.
+    Value: !GetAtt conciergeBot.version
+  ConciergeBotFeedbackIntentChecksum:
+    Description: The checksum of the custom intent for this stack.
+    Value: !GetAtt conciergeBotIntent.checksum
+    Export:
+      Name: fn-bot-intent-checksum
+  ConciergeBotFeedbackIntentVersion:
+    Description: The version of the custom intent for this stack.
+    Value: !GetAtt conciergeBotIntent.version
+  ConciergeBotLikertScaleSlotChecksum:
+    Description: The checksum of the custom intent for this stack.
+    Value: !GetAtt likertScaleSlot.checksum
+    Export:
+      Name: fn-bot-slot-checksum
+  ConciergeBotLikertScaleSlotVersion:
+    Description: The version of the custom intent for this stack.
+    Value: !GetAtt likertScaleSlot.version
