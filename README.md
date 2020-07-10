@@ -15,7 +15,7 @@ _Optional_
 ### Custom resources
 AWS Lex isn't included as a resource in Cloudformation.
 
-This project uses custom resources for [lex-bot](), [lex-intent](), and [lex-slot-type]()
+This project uses custom resources for [lex-bot](https://github.com/danblundell/cfn-lex-bot), [lex-intent](https://github.com/danblundell/cfn-lex-intent), and [lex-slot-type](https://github.com/danblundell/cfn-lex-slot-type)
 
 To be able to deploy this Cloudformation stack, you'll need to have the custom resources deployed to your AWS Account in the same region first.
 
