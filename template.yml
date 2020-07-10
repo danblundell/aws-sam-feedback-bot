@@ -59,6 +59,11 @@ Resources:
       FunctionName: !Sub
         - "${AWS::StackName}-validation-${Workload}"
         - Workload: !Ref Workload
+      Environment:
+        Variables:
+          feedbackIntentName: !Sub
+            - '${AWS::StackName}_intent_${Workload}'
+            - Workload: !Ref Workload
       Runtime: nodejs12.x
       MemorySize: 128
       Timeout: 100
@@ -81,6 +86,7 @@ Resources:
       - value: 1
         synonyms:
           - strongly agree
+          - yeah loads
       - value: 2
         synonyms:
           - agree
@@ -111,9 +117,12 @@ Resources:
               contentType: "PlainText"
         fulfillmentActivity:
           type: "ReturnIntent"
+        dialogCodeHook:
+          uri: !GetAtt feedbackBotValidation.Arn
+          messageVersion: 1.0
         rejectionStatement:
           messages:
-            - content: "Ok, we'll leave it there, thanks!"
+            - content: "Ok, we'll leave it there, thanks so much!"
               contentType: "PlainText"
             - content: "I've cancelled your feedback."
               contentType: "PlainText"
@@ -140,7 +149,7 @@ Resources:
       - conciergeBotIntent
     Properties: 
       ServiceToken:
-        Fn::ImportValue: cfn-lex-bot-1-0-3-ServiceToken
+        Fn::ImportValue: cfn-lex-bot-1-0-4-ServiceToken
       name: !Sub
         - '${AWS::StackName}_bot_${Workload}'
         - Workload: !Ref Workload
@@ -156,16 +165,16 @@ Resources:
         messages:
           - content: "I'm sorry, I didn't hear that. Can you repeate what you just said?"
             contentType: "PlainText"
-          - content: "Can you say that again?"
+          - content: "Can you say that again please?"
             contentType: "PlainText"
       description: 'a bot'
-      voiceId: Joanna
+      voiceId: Joanna # have to use a en-US voice because of locale error
       idleSessionTTLInSeconds: 300
       intents:
         - intentName:
             Ref: conciergeBotIntent
           intentVersion: "$LATEST"
-      locale: en-US
+      locale: en-US # for some reason it won't build as en-GB which is odd, throws a 400 error
       processBehavior: "BUILD"
 
 # Export the checksum for each custom resource so that
