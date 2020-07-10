@@ -73,6 +73,37 @@ Resources:
           - thrice
           - more than three times
 
+  oneToFourSlot:
+    Type: Custom::LexSlotType
+    Properties:
+      ServiceToken:
+        Fn::ImportValue: cfn-lex-slot-type-1-0-3-ServiceToken
+      name: !Sub
+        - '${AWS::StackName}_one_to_four_slot_${Workload}'
+        - Workload: !Ref Workload
+      description: 1-4 scale for how many times a call needed to be made
+      valueSelectionStrategy: TOP_RESOLUTION
+      enumerationValues:
+      - value: 1
+        synonyms:
+          - once
+      - value: 2
+        synonyms:
+          - twice
+          - two times
+      - value: 3
+        synonyms:
+          - three times
+          - thrice
+      - value: 4
+        synonyms:
+          - four times
+          - five
+          - four
+          - five times
+          - more than three times
+          - i lost count
+          - too many
 
   likertScaleSlot:
     Type: Custom::LexSlotType
@@ -158,16 +189,28 @@ Resources:
         - name: repeatedWord
           description: Which word did you need to repeat?
           priority: 3
-          slotConstraint: Required
+          slotConstraint: Optional
           slotType: AMAZON.Service
           valueElicitationPrompt:
             maxAttempts: 2
             messages:
             - content: What word or phrase did you have to repeat?
               contentType: PlainText
+        - name: howManyTimes
+          description: How many times did the caller call to get through?
+          priority: 4
+          slotConstraint: Required
+          slotType: 
+            Ref: oneToFourSlot
+          slotTypeVersion: "$LATEST"
+          valueElicitationPrompt:
+            maxAttempts: 2
+            messages:
+            - content: Thank you. How many times did you need to call, before getting through?
+              contentType: PlainText
         - name: satisfied
           description: Were you satisfied with your experience?
-          priority: 4
+          priority: 5
           slotConstraint: Required
           slotType: 
             Ref: likertScaleSlot
