@@ -18,20 +18,6 @@ Parameters:
     Default: "dev"
     Description: "The type of workload (environment) that this stack will run"
 
-#Conditions:
-  # LikertScaleSlotExists:
-  #   Fn::Equals:
-  #     - Ref fn-bot-slot-checksum
-  #     - Ref 'AWS::NoValue'
-  # ConciergeBotExists:
-  #   Fn::Equals:
-  #     - Ref fn-bot-checksum
-  #     - Ref 'AWS::NoValue'
-  # ConciergeBotIntentExists:
-  #   Fn::Equals:
-  #     - Ref fn-bot-intent-checksum
-  #     - Ref 'AWS::NoValue'
-
 # Resources declares the AWS resources that you want to include in the stack
 # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/resources-section-structure.html
 Resources:
@@ -59,6 +45,35 @@ Resources:
         # Give Lambda basic execution Permission to the helloFromLambda
         - AWSLambdaBasicExecutionRole
   
+  zeroToThreeSlot:
+    Type: Custom::LexSlotType
+    Properties:
+      ServiceToken:
+        Fn::ImportValue: cfn-lex-slot-type-1-0-3-ServiceToken
+      name: !Sub
+        - '${AWS::StackName}_zero_to_three_slot_${Workload}'
+        - Workload: !Ref Workload
+      description: 0-3 scale for not at all through to three times or more
+      valueSelectionStrategy: TOP_RESOLUTION
+      enumerationValues:
+      - value: 0
+        synonyms:
+          - not at all
+          - none
+      - value: 1
+        synonyms:
+          - once
+      - value: 2
+        synonyms:
+          - twice
+          - two times
+      - value: 3
+        synonyms:
+          - three times
+          - thrice
+          - more than three times
+
+
   likertScaleSlot:
     Type: Custom::LexSlotType
     Properties:
@@ -128,9 +143,21 @@ Resources:
             messages:
             - content: How easy was it to use the automated service?
               contentType: PlainText
+        - name: repeatMyself
+          description: Did you have to repeat yourself?
+          priority: 2
+          slotConstraint: Required
+          slotType: 
+            Ref: zeroToThreeSlot
+          slotTypeVersion: "$LATEST"
+          valueElicitationPrompt:
+            maxAttempts: 2
+            messages:
+            - content: Thanks. "How many times did you have to repeat yourself" Not at all, once, twice or three times?
+              contentType: PlainText
         - name: repeatedWord
           description: Which word did you need to repeat?
-          priority: 2
+          priority: 3
           slotConstraint: Required
           slotType: AMAZON.Service
           valueElicitationPrompt:
@@ -140,7 +167,7 @@ Resources:
               contentType: PlainText
         - name: satisfied
           description: Were you satisfied with your experience?
-          priority: 3
+          priority: 4
           slotConstraint: Required
           slotType: 
             Ref: likertScaleSlot
@@ -150,6 +177,7 @@ Resources:
             messages:
             - content: And the final statement is "Overall, I was satisfied with my experience"?
               contentType: PlainText
+        
 
 
   conciergeBot:
