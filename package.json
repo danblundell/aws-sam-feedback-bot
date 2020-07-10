@@ -1,7 +1,7 @@
 {
-    "name": "concierge-bot-feedback",
+    "name": "aws-sam-feedback-bot",
     "description": "A serverless application model for an AWS Lex Bot that captures user feedback after a delivered service",
-    "version": "0.0.1",
+    "version": "0.1.0",
     "private": true,
     "dependencies": {},
     "devDependencies": {

@@ -1,4 +1,4 @@
-# Feedback Bot
+# AWS SAM Feedback Bot
 
 This project contains source code and supporting files for a serverless application that creates a Feedback Bot on AWS.
 
@@ -11,6 +11,13 @@ You can deploy it with the AWS Serverless Application Model (AWS SAM) command li
 
 _Optional_
 * Docker - for local testing [Install Docker community edition](https://hub.docker.com/search/?type=edition&offering=community).
+
+### Custom resources
+AWS Lex isn't included as a resource in Cloudformation.
+
+This project uses custom resources for [lex-bot](), [lex-intent](), and [lex-slot-type]()
+
+To be able to deploy this Cloudformation stack, you'll need to have the custom resources deployed to your AWS Account in the same region first.
 
 ## Project structure
 It includes the following files and folders:
@@ -30,8 +37,8 @@ Resources for this project are defined in the `template.yml` file in this projec
 Tests are defined in the `__tests__` folder in this project. Use `npm` to install the [Jest test framework](https://jestjs.io/) and run unit tests.
 
 ```bash
-feedback-bot$ npm install
-feedback-bot$ npm run test
+aws-sam-feedback-bot$ npm install
+aws-sam-feedback-bot$ npm run test
 ```
 
 ## Deployment
@@ -64,7 +71,7 @@ After running the deploy command, you'll get a series of prompts:
 Build your application by using the `sam build` command.
 
 ```bash
-feedback-bot$ sam build
+aws-sam-feedback-bot$ sam build
 ```
 
 The AWS SAM CLI installs dependencies that are defined in `package.json`, creates a deployment package, and saves it in the `.aws-sam/build` folder.
@@ -78,7 +85,7 @@ Run functions locally and invoke them with the `sam local invoke` command.
 Example: 
 
 ```bash
-feedback-bot$ sam local invoke feedbackBotValidation --event events/repeat_0.json
+aws-sam-feedback-bot$ sam local invoke feedbackBotValidation --event events/repeat_0.json
 ```
 
 ## Fetch, tail, and filter Lambda function logs
@@ -90,7 +97,7 @@ In addition to printing the logs on the terminal, this command has several nifty
 **NOTE:** This command works for all Lambda functions, not just the ones you deploy using AWS SAM.
 
 ```bash
-feedback-bot$ sam logs -n feedbackBotValidation --stack-name <STACK-NAME> --tail
+aws-sam-feedback-bot$ sam logs -n feedbackBotValidation --stack-name <STACK-NAME> --tail
 ```
 
 **NOTE:** This uses the logical name of the function within the stack. This is the correct name to use when searching logs inside an AWS Lambda function within a CloudFormation stack, even if the deployed function name varies due to CloudFormation's unique resource name generation.
