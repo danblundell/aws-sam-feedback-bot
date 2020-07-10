@@ -17,19 +17,6 @@ Parameters:
     Type: String
     Default: "dev"
     Description: "The type of workload (environment) that this stack will run"
-  FirstTimeDeploy: 
-    Type: String
-    Default: false
-    Description: "Whether this is the first time the stack is being deployed"
-  # fn-bot-checksum:
-  #   Type: String
-  #   Default: Fn::ImportValue fn-bot-checksum
-  # fn-bot-intent-checksum:
-  #   Type: String
-  #   Default: Fn::ImportValue fn-bot-intent-checksum
-  # fn-bot-slot-checksum:
-  #   Type: String
-  #   Default: Fn::ImportValue fn-bot-slot-checksum
 
 #Conditions:
   # LikertScaleSlotExists:
@@ -140,6 +127,28 @@ Resources:
             maxAttempts: 2
             messages:
             - content: How easy was it to use the automated service?
+              contentType: PlainText
+        - name: repeatedWord
+          description: Which word did you need to repeat?
+          priority: 2
+          slotConstraint: Required
+          slotType: AMAZON.Service
+          valueElicitationPrompt:
+            maxAttempts: 2
+            messages:
+            - content: What word or phrase did you have to repeat?
+              contentType: PlainText
+        - name: satisfied
+          description: Were you satisfied with your experience?
+          priority: 3
+          slotConstraint: Required
+          slotType: 
+            Ref: likertScaleSlot
+          slotTypeVersion: "$LATEST"
+          valueElicitationPrompt:
+            maxAttempts: 2
+            messages:
+            - content: And the final statement is "Overall, I was satisfied with my experience"?
               contentType: PlainText
 
 
