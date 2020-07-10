@@ -137,6 +137,11 @@ Resources:
 
   conciergeBotIntent:
       Type: Custom::LexIntent
+      DependsOn:
+      - likertScaleSlot
+      - zeroToThreeSlot
+      - oneToFourSlot
+      - feedbackBotValidation
       Properties:
         ServiceToken:
           Fn::ImportValue: cfn-lex-intent-1-0-3-ServiceToken
