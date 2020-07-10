@@ -24,7 +24,7 @@ Resources:
   # Each Lambda function is defined by properties:
   # https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
 
-  # This is a Lambda function config associated with the source code: hello-from-lambda.js
+  # Validation function for the Lex slots - runs on each user input to the bot
   feedbackBotValidation:
     Type: AWS::Serverless::Function
     Properties:
@@ -135,6 +135,7 @@ Resources:
         synonyms:
           - strongly disagree
 
+  # custom intent to capture user input
   conciergeBotIntent:
       Type: Custom::LexIntent
       DependsOn:
@@ -227,7 +228,7 @@ Resources:
               contentType: PlainText
         
 
-
+  # the Lex bot - just add the intent here, thats where the real work is done
   conciergeBot:
     Type: Custom::LexBot
     DependsOn:
@@ -262,9 +263,7 @@ Resources:
       locale: en-US # for some reason it won't build as en-GB which is odd, throws a 400 error
       processBehavior: "BUILD"
 
-# Export the checksum for each custom resource so that
-# we can provide the checksum for subsequent updates
-# to the stack
+# Don't actually need to output these values - it's just handy to check what they are for consistency
 Outputs:
   ConciergeBotChecksum:
     Description: The checksum of the Lex Bot for this stack.

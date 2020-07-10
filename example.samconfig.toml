@@ -1,0 +1,12 @@
+version = 0.1
+[default]
+[default.deploy]
+[default.deploy.parameters]
+stack_name = "samfeedbackbot"
+s3_prefix = "samfeedbackbot"
+region = "eu-west-2"
+profile = "<YOUR AWS CREDENTIALS PROFILE>"
+confirm_changeset = true
+capabilities = "CAPABILITY_IAM"
+parameter_overrides = "Workload=\"dev\""
+
