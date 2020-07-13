@@ -24,27 +24,29 @@ Resources:
   # Each Lambda function is defined by properties:
   # https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
 
-  # Validation function for the Lex slots - runs on each user input to the bot
+  # feedback bot validation lambda function
   feedbackBotValidation:
     Type: AWS::Serverless::Function
     Properties:
-      Handler: src/validation/index.handler
+      Handler: index.handler
       FunctionName: !Sub
         - "${AWS::StackName}-validation-${Workload}"
         - Workload: !Ref Workload
       Environment:
-        Variables:
+        Variables: # pass in the name of the intent dynamically so that it can be deployment with cloudformation repeatedly
           feedbackIntentName: !Sub
             - '${AWS::StackName}_intent_${Workload}'
             - Workload: !Ref Workload
       Runtime: nodejs12.x
       MemorySize: 128
       Timeout: 100
+      CodeUri: ./src/validation/
       Description: A Lambda function that validates the Lex Bot slot values.
       Policies:
-        # Give Lambda basic execution Permission to the helloFromLambda
+        # Give Lambda basic execution Permission to the function
         - AWSLambdaBasicExecutionRole
   
+  # custom slot for numeric scale values 0-3
   zeroToThreeSlot:
     Type: Custom::LexSlotType
     Properties:
@@ -73,6 +75,7 @@ Resources:
           - thrice
           - more than three times
 
+  # custom slot for numeric scale values 1-4
   oneToFourSlot:
     Type: Custom::LexSlotType
     Properties:
@@ -105,6 +108,7 @@ Resources:
           - i lost count
           - too many
 
+  # custom slot for numeric scale values 1-5 as a likert scale
   likertScaleSlot:
     Type: Custom::LexSlotType
     Properties:
@@ -135,7 +139,17 @@ Resources:
         synonyms:
           - strongly disagree
 
-  # custom intent to capture user input
+  # give permission to Lex bots to run the validation function
+  conciergeBotPermission:
+    Type: AWS::Lambda::Permission
+    Properties: 
+      Action: lambda:InvokeFunction
+      FunctionName: !GetAtt feedbackBotValidation.Arn
+      Principal: lex.amazonaws.com
+
+  # the feedback intent itself
+  # needs the slot types, lambda function and 
+  # permission to run the lambda function
   conciergeBotIntent:
       Type: Custom::LexIntent
       DependsOn:
@@ -143,6 +157,7 @@ Resources:
       - zeroToThreeSlot
       - oneToFourSlot
       - feedbackBotValidation
+      - conciergeBotPermission
       Properties:
         ServiceToken:
           Fn::ImportValue: cfn-lex-intent-1-0-3-ServiceToken
@@ -155,9 +170,9 @@ Resources:
             - content: "Is that your feedback complete?"
               contentType: "PlainText"
         fulfillmentActivity:
-          type: "ReturnIntent"
+          type: "ReturnIntent" # this will need to change for the fulfillment function
         dialogCodeHook:
-          uri: !GetAtt feedbackBotValidation.Arn
+          uri: !GetAtt feedbackBotValidation.Arn # point to the validation function
           messageVersion: 1.0
         rejectionStatement:
           messages:
@@ -178,7 +193,7 @@ Resources:
           valueElicitationPrompt:
             maxAttempts: 2
             messages:
-            - content: How easy was it to use the automated service?
+            - content: First question, was it easy to use the automated service? Answer with Strongly agree, agree, don't know, disagree or strongly disagree
               contentType: PlainText
         - name: repeatMyself
           description: Did you have to repeat yourself?
@@ -190,13 +205,13 @@ Resources:
           valueElicitationPrompt:
             maxAttempts: 2
             messages:
-            - content: Thanks. "How many times did you have to repeat yourself" Not at all, once, twice or three times?
+            - content: Thanks. How many times did you have to repeat yourself? Not at all, once, twice or three times?
               contentType: PlainText
         - name: repeatedWord
           description: Which word did you need to repeat?
           priority: 3
           slotConstraint: Optional
-          slotType: AMAZON.Service
+          slotType: AMAZON.Service # don't need a version for built-in slot types
           valueElicitationPrompt:
             maxAttempts: 2
             messages:
@@ -228,7 +243,9 @@ Resources:
               contentType: PlainText
         
 
-  # the Lex bot - just add the intent here, thats where the real work is done
+  # Lex bot itself
+  # only depends on the intent because 
+  # the intent depends on everything else
   conciergeBot:
     Type: Custom::LexBot
     DependsOn:
@@ -259,33 +276,32 @@ Resources:
       intents:
         - intentName:
             Ref: conciergeBotIntent
-          intentVersion: "$LATEST"
+          intentVersion: "$LATEST" # always use the latest intent
       locale: en-US # for some reason it won't build as en-GB which is odd, throws a 400 error
-      processBehavior: "BUILD"
+      processBehavior: "BUILD" # build automatically, although this doesn't trigger if the bot itself isn't changed
 
-# Don't actually need to output these values - it's just handy to check what they are for consistency
-Outputs:
-  ConciergeBotChecksum:
-    Description: The checksum of the Lex Bot for this stack.
-    Value: !GetAtt conciergeBot.checksum
-    Export:
-      Name: fn-bot-checksum
-  ConciergeBotVersion:
-    Description: The version of the Lex Bot for this stack.
-    Value: !GetAtt conciergeBot.version
-  ConciergeBotFeedbackIntentChecksum:
-    Description: The checksum of the custom intent for this stack.
-    Value: !GetAtt conciergeBotIntent.checksum
-    Export:
-      Name: fn-bot-intent-checksum
-  ConciergeBotFeedbackIntentVersion:
-    Description: The version of the custom intent for this stack.
-    Value: !GetAtt conciergeBotIntent.version
-  ConciergeBotLikertScaleSlotChecksum:
-    Description: The checksum of the custom intent for this stack.
-    Value: !GetAtt likertScaleSlot.checksum
-    Export:
-      Name: fn-bot-slot-checksum
-  ConciergeBotLikertScaleSlotVersion:
-    Description: The version of the custom intent for this stack.
-    Value: !GetAtt likertScaleSlot.version
+# Outputs:
+#   ConciergeBotChecksum:
+#     Description: The checksum of the Lex Bot for this stack.
+#     Value: !GetAtt conciergeBot.checksum
+#     Export:
+#       Name: fn-bot-checksum
+#   ConciergeBotVersion:
+#     Description: The version of the Lex Bot for this stack.
+#     Value: !GetAtt conciergeBot.version
+#   ConciergeBotFeedbackIntentChecksum:
+#     Description: The checksum of the custom intent for this stack.
+#     Value: !GetAtt conciergeBotIntent.checksum
+#     Export:
+#       Name: fn-bot-intent-checksum
+#   ConciergeBotFeedbackIntentVersion:
+#     Description: The version of the custom intent for this stack.
+#     Value: !GetAtt conciergeBotIntent.version
+#   ConciergeBotLikertScaleSlotChecksum:
+#     Description: The checksum of the custom intent for this stack.
+#     Value: !GetAtt likertScaleSlot.checksum
+#     Export:
+#       Name: fn-bot-slot-checksum
+#   ConciergeBotLikertScaleSlotVersion:
+#     Description: The version of the custom intent for this stack.
+#     Value: !GetAtt likertScaleSlot.version
